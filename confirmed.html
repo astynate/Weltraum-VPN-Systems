@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weltraum® – Account Verification</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+
+    body {
+        height: 100vh;
+        width: 100vw;
+        padding: 0;
+        margin: 0;
+        font-family: "Lato", sans-serif;
+        background: #010811;
+        background: linear-gradient(to bottom, #1C4477, black);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: "Lato", sans-serif;
+    }
+
+    .desc {
+        margin-top: 25px;
+        font-size: 15px;
+        line-height: 1.5;
+        color: #ffffffcc;
+    }
+
+    .video {
+        top: 0;
+        left: 0;
+        position: fixed;
+        height: 100svh;
+        width: 100vw;
+        object-fit: cover;
+        mix-blend-mode: screen;
+    }
+</style>
+</head>
+<body>
+    <img src="images/check-mark.png" style="height: 42px; margin-bottom: 10px;" draggable="false">
+    <h2 style="margin: 0; padding: 0;">Successfully confirmed</h2>
+    <p style="opacity: 0.75; font-weight: 400; font-size: 16px; margin: 5px;">Your account was successfully accepted</p>
+    <img class="video" src="images/confetti.gif" draggable="false" />
+    <script>
+        const inputs = document.querySelectorAll('.code-inputs input');
+
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                input.value = input.value.toUpperCase();
+
+                if (input.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === "Backspace" && input.value === "" && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+
+            input.addEventListener("paste", (e) => {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData("text");
+
+                const chars = paste.slice(0, inputs.length).toUpperCase();
+
+                chars.split("").forEach((char, i) => {
+                    inputs[i].value = char;
+                });
+
+                const last = Math.min(chars.length - 1, inputs.length - 1);
+                inputs[last].focus();
+            });
+        });
+
+        function getVerificationCode() {
+            return Array.from(inputs).map(i => i.value).join('');
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const link = urlParams.get("link");
+
+        async function sendCode() {
+            const code = getVerificationCode();
+
+            if (code.length !== 6) {
+                alert("Please enter the full 6-digit code.");
+                return;
+            }
+
+            const formData = new URLSearchParams();
+
+            formData.append("link", link);
+            formData.append("code", code);
+
+            const response = await fetch("http://localhost:5000/api/confirmations", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: formData.toString()
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert("Account verified!");
+            } else {
+                alert("Invalid code.");
+            }
+        }
+
+        document.querySelector(".button").addEventListener("click", sendCode);
+    </script>
+</body>
+</html>
